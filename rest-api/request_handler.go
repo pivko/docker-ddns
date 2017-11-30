@@ -11,6 +11,7 @@ import (
 type WebserviceResponse struct {
     Success bool
     Message string
+    Status  string
     Domain string
     Address string
     AddrType string
@@ -29,11 +30,13 @@ func BuildWebserviceResponseFromRequest(r *http.Request, appConfig *Config) Webs
     if sharedSecret != appConfig.SharedSecret {
 		log.Println(fmt.Sprintf("Invalid shared secret: %s", sharedSecret))
         response.Success = false
+	response.Status = "badauth"
         response.Message = "Invalid Credentials"
         return response
     }
 
     if response.Domain == "" {
+	response.Status = "nohost"
         response.Success = false
         response.Message = fmt.Sprintf("Domain not set")
         log.Println("Domain not set")
@@ -45,12 +48,13 @@ func BuildWebserviceResponseFromRequest(r *http.Request, appConfig *Config) Webs
     } else if ipparser.ValidIP6(response.Address) {
         response.AddrType = "AAAA"
     } else {
+	response.Status = "badresolv"
         response.Success = false
         response.Message = fmt.Sprintf("%s is neither a valid IPv4 nor IPv6 address", response.Address)
         log.Println(fmt.Sprintf("Invalid address: %s", response.Address))
         return response
     }
-
+    response.Status = "good"
     response.Success = true
 
     return response
